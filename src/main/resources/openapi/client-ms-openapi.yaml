@@ -169,13 +169,19 @@ components:
       properties:
         firstName:
           type: string
+          nullable: true
         lastName:
           type: string
+          nullable: true
         dni:
           type: string
+          nullable: true
         email:
           type: string
           format: email
+          nullable: true
+      example:
+        email: "new@example.com"
 
     ClientResponse:
       type: object

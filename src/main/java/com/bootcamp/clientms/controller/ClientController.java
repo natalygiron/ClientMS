@@ -2,6 +2,8 @@ package com.bootcamp.clientms.controller;
 
 import com.bootcamp.clientms.domain.Client;
 import com.bootcamp.clientms.dto.request.CreateClientRequest;
+import com.bootcamp.clientms.dto.request.PatchClientRequest;
+import com.bootcamp.clientms.dto.request.UpdateClientRequest;
 import com.bootcamp.clientms.dto.response.ClientResponse;
 import com.bootcamp.clientms.service.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +17,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "Client", description = "Customer-related operations")
 @Slf4j
@@ -44,4 +48,34 @@ public class ClientController {
         log.info("New customer registration {}", request);
         return ResponseEntity.ok(ClientResponse.from(client));
     }
+
+    @GetMapping
+    public ResponseEntity<List<ClientResponse>> list() {
+        List<ClientResponse> response = clientService.listAll()
+                .stream()
+                .map(ClientResponse::from)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ClientResponse> update(@PathVariable String id,
+                                                 @Valid @RequestBody UpdateClientRequest req) {
+        Client updated = clientService.updateClient(id, req);
+        return ResponseEntity.ok(ClientResponse.from(updated));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ClientResponse> patch(@PathVariable String id,
+                                                @RequestBody PatchClientRequest req) {
+        Client updated = clientService.patchClient(id, req);
+        return ResponseEntity.ok(ClientResponse.from(updated));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        clientService.deleteClient(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }
