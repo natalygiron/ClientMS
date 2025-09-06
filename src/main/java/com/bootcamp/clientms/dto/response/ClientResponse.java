@@ -9,14 +9,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ClientResponse {
-  private Long id;
+  private String id;
   private String firstName;
   private String lastName;
   private String dni;
   private String email;
 
   public static ClientResponse from(Client client) {
-    return new ClientResponse(client.getId(), client.getFirstName(), client.getLastName(),
-        client.getDni(), client.getEmail());
+    return new ClientResponse(
+            client.getId(),
+            client.getFirstName(),
+            client.getLastName(),
+            client.getDni(),
+            client.getEmail()
+    );
   }
 }

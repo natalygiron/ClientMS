@@ -1,5 +1,7 @@
 package com.bootcamp.clientms.domain;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -7,16 +9,25 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@AllArgsConstructor
-@Builder
+@Document("clients")
 @Data
+@Builder
 @NoArgsConstructor
-@Document("accounts")
+@AllArgsConstructor
 public class Client {
   @Id
-  private Long id;
+  private String id;
+
+  @NotBlank
   private String firstName;
+
+  @NotBlank
   private String lastName;
+
+  @Email
+  @NotBlank
   private String email;
+
+  @NotBlank
   private String dni;
 }
