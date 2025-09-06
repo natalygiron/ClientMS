@@ -1,0 +1,106 @@
+{
+  "info": {
+    "name": "ClientMS – Microservice",
+    "description": "Collection for testing ClientMS endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Client",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Marie\",\n  \"lastName\": \"Shirley\",\n  \"dni\": \"75484811\",\n  \"email\": \"user@example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes"]
+        }
+      }
+    },
+    {
+      "name": "Get Client by ID",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{clientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "{{clientId}}"]
+        }
+      }
+    },
+    {
+      "name": "List All Clients",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/clientes",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes"]
+        }
+      }
+    },
+    {
+      "name": "Update Client",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Marie\",\n  \"lastName\": \"Shirley\",\n  \"email\": \"new@example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{clientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "{{clientId}}"]
+        }
+      }
+    },
+    {
+      "name": "Patch Client",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patched@example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{clientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "{{clientId}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete Client",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/clientes/{{clientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["clientes", "{{clientId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "clientId", "value": "68bc69b36e0b6342e53374d3" }
+  ]
+}
