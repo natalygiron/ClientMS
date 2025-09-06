@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: client-ms
+
+  data:
+    mongodb:
+      uri: mongodb+srv://natalygirona:c0l1br1@mycluster.ijclir9.mongodb.net/catalogdb?retryWrites=true&w=majority&appName=Cluster0
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
