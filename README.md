@@ -7,10 +7,9 @@ Este microservicio gestiona operaciones CRUD sobre clientes, siguiendo una arqui
 ## 🏷️ Badges
 
 ![Java](https://img.shields.io/badge/language-Java%2017-blue)
-![Build](https://img.shields.io/github/actions/workflow/status/natalygiron/ClientMS/maven.yml?label=build)
-![License](https://img.shields.io/github/license/natalygiron/ClientMS)
-![Swagger](https://img.shields.io/badge/docs-Swagger-blue?logo=swagger)
-
+![Build](https://github.com/natalygiron/ClientMS/actions/workflows/maven.yml/badge.svg)
+[![Swagger](https://img.shields.io/badge/docs-Swagger-blue?logo=swagger)](http://localhost:8080/swagger-ui/index.html)
+<!-- ![License](https://img.shields.io/github/license/natalygiron/ClientMS) -->
 ---
 
 ## 📘 API Endpoints
