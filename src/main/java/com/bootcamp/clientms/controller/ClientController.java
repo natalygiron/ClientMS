@@ -56,11 +56,11 @@ public class ClientController {
   }
 
   @GetMapping
-  @Operation(summary = "Listar todos los clientes", description = "Devuelve una lista completa de clientes registrados")
+  @Operation(summary = "Listar todos los clientes",
+      description = "Devuelve una lista completa de clientes registrados")
   @ApiResponses(value = {
-          @ApiResponse(responseCode = "200", description = "Lista de clientes",
-                  content = @Content(array = @ArraySchema(schema = @Schema(implementation = ClientResponse.class))))
-  })
+      @ApiResponse(responseCode = "200", description = "Lista de clientes", content = @Content(
+          array = @ArraySchema(schema = @Schema(implementation = ClientResponse.class))))})
   public Flux<ClientResponse> list() {
     return clientService.listAll().map(ClientResponse::from);
   }
