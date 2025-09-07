@@ -1,81 +1,111 @@
 package com.bootcamp.clientms.controller;
 
-import com.bootcamp.clientms.domain.Client;
 import com.bootcamp.clientms.dto.request.CreateClientRequest;
 import com.bootcamp.clientms.dto.request.PatchClientRequest;
 import com.bootcamp.clientms.dto.request.UpdateClientRequest;
 import com.bootcamp.clientms.dto.response.ClientResponse;
+import com.bootcamp.clientms.dto.response.ErrorResponse;
 import com.bootcamp.clientms.service.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Tag(name = "Client", description = "Customer-related operations")
 @Slf4j
-@AllArgsConstructor
 @RestController
 @RequestMapping("clientes")
+@RequiredArgsConstructor
 public class ClientController {
 
-    private final ClientService clientService;
+  private final ClientService clientService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ClientResponse> get(@PathVariable String id) {
-        return ResponseEntity.ok(ClientResponse.from(clientService.getById(id)));
-    }
+  @GetMapping("/{id}")
+  @Operation(summary = "Obtener cliente por ID")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Cliente encontrado",
+          content = @Content(schema = @Schema(implementation = ClientResponse.class))),
+      @ApiResponse(responseCode = "404", description = "Cliente no existe",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+  public Mono<ResponseEntity<ClientResponse>> get(@PathVariable String id) {
+    return clientService.getById(id).map(ClientResponse::from).map(ResponseEntity::ok);
+  }
 
-    @Operation(summary = "Registrar nuevo cliente")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Customer successfully created",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CreateClientRequest.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid data"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @PostMapping
-    public ResponseEntity<ClientResponse> create(@Valid @RequestBody CreateClientRequest request) {
-        Client client = clientService.register(request);
-        log.info("New customer registration {}", request);
-        return ResponseEntity.ok(ClientResponse.from(client));
-    }
+  @PostMapping
+  @Operation(summary = "Registrar nuevo cliente")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Cliente creado",
+          content = @Content(schema = @Schema(implementation = ClientResponse.class))),
+      @ApiResponse(responseCode = "400", description = "Datos inválidos",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "409", description = "Email o DNI duplicado",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+  public Mono<ResponseEntity<ClientResponse>> create(@Valid @RequestBody CreateClientRequest req) {
+    log.info("New customer registration {}", req);
+    return clientService.register(req).map(ClientResponse::from).map(ResponseEntity::ok);
+  }
 
-    @GetMapping
-    public ResponseEntity<List<ClientResponse>> list() {
-        List<ClientResponse> response = clientService.listAll()
-                .stream()
-                .map(ClientResponse::from)
-                .toList();
-        return ResponseEntity.ok(response);
-    }
+  @GetMapping
+  @Operation(summary = "Listar todos los clientes",
+      description = "Devuelve una lista completa de clientes registrados")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Lista de clientes", content = @Content(
+          array = @ArraySchema(schema = @Schema(implementation = ClientResponse.class))))})
+  public Flux<ClientResponse> list() {
+    return clientService.listAll().map(ClientResponse::from);
+  }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ClientResponse> update(@PathVariable String id,
-                                                 @Valid @RequestBody UpdateClientRequest req) {
-        Client updated = clientService.updateClient(id, req);
-        return ResponseEntity.ok(ClientResponse.from(updated));
-    }
+  @PutMapping("/{id}")
+  @Operation(summary = "Actualizar cliente por ID")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Cliente actualizado",
+          content = @Content(schema = @Schema(implementation = ClientResponse.class))),
+      @ApiResponse(responseCode = "400", description = "Datos inválidos",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "Cliente no existe",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "409", description = "Email duplicado",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+  public Mono<ResponseEntity<ClientResponse>> update(@PathVariable String id,
+      @Valid @RequestBody UpdateClientRequest req) {
+    return clientService.update(id, req).map(ClientResponse::from).map(ResponseEntity::ok);
+  }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<ClientResponse> patch(@PathVariable String id,
-                                                @RequestBody PatchClientRequest req) {
-        Client updated = clientService.patchClient(id, req);
-        return ResponseEntity.ok(ClientResponse.from(updated));
-    }
+  @PatchMapping("/{id}")
+  @Operation(summary = "Actualizar parcialmente cliente por ID")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Cliente actualizado",
+          content = @Content(schema = @Schema(implementation = ClientResponse.class))),
+      @ApiResponse(responseCode = "400", description = "Error de validación",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "Cliente no encontrado",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "409", description = "Email ya registrado",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+  public Mono<ResponseEntity<ClientResponse>> patch(@PathVariable String id,
+      @Valid @RequestBody PatchClientRequest req) {
+    return clientService.patchClient(id, req).map(ClientResponse::from).map(ResponseEntity::ok);
+  }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        clientService.deleteClient(id);
-        return ResponseEntity.noContent().build();
-    }
+  @DeleteMapping("/{id}")
+  @Operation(summary = "Eliminar cliente por ID")
+  @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Cliente eliminado"),
+      @ApiResponse(responseCode = "404", description = "Cliente no existe",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "400", description = "Cliente tiene cuentas activas",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+  public Mono<ResponseEntity<Void>> delete(@PathVariable String id) {
+    return clientService.delete(id).thenReturn(ResponseEntity.noContent().build());
+  }
 
 }

@@ -1,11 +1,11 @@
 package com.bootcamp.clientms.repository;
 
 import com.bootcamp.clientms.domain.Client;
-import java.util.Optional;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+import reactor.core.publisher.Mono;
 
-public interface ClientRepository extends MongoRepository<Client, String> {
-    Optional<Client> findByEmail(String email);
-    boolean existsByDni(String dni);
-    boolean existsByEmail(String email);
+public interface ClientRepository extends ReactiveMongoRepository<Client, String> {
+  Mono<Boolean> existsByDni(String dni);
+
+  Mono<Boolean> existsByEmail(String email);
 }
