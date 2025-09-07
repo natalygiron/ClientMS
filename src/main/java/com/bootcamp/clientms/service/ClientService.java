@@ -4,106 +4,123 @@ import com.bootcamp.clientms.domain.Client;
 import com.bootcamp.clientms.dto.request.CreateClientRequest;
 import com.bootcamp.clientms.dto.request.PatchClientRequest;
 import com.bootcamp.clientms.dto.request.UpdateClientRequest;
-import com.bootcamp.clientms.dto.response.ClientResponse;
+import com.bootcamp.clientms.integration.account.AccountResponse;
 import com.bootcamp.clientms.repository.ClientRepository;
 import jakarta.validation.ValidationException;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-
-import java.util.List;
-
-import static org.apache.logging.log4j.util.Strings.isBlank;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ClientService {
 
-    private final ClientRepository clientRepository;
+  private final ClientRepository clientRepository;
+  private final WebClient webClient;
 
-    @Transactional(readOnly = true)
-    public Client getById(String id) {
-        return clientRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+  public Mono<Client> register(CreateClientRequest req) {
+    Client client = Client.builder().firstName(req.getFirstName()).lastName(req.getLastName())
+        .dni(req.getDni()).email(req.getEmail()).build();
+
+    return Mono.zip(clientRepository.existsByDni(client.getDni()),
+        clientRepository.existsByEmail(client.getEmail())).flatMap(tuple -> {
+          if (tuple.getT1())
+            return Mono.error(new IllegalArgumentException("DNI already in use"));
+          if (tuple.getT2())
+            return Mono.error(new IllegalArgumentException("Email already in use"));
+          return clientRepository.save(client);
+        });
+  }
+
+  public Mono<Client> getById(String id) {
+    return clientRepository.findById(id)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found")));
+  }
+
+  public Flux<Client> listAll() {
+    return clientRepository.findAll();
+  }
+
+  public Mono<Client> update(String id, UpdateClientRequest req) {
+    return clientRepository.findById(id)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found")))
+        .flatMap(existing -> {
+          existing.setFirstName(req.getFirstName());
+          existing.setLastName(req.getLastName());
+          existing.setDni(req.getDni());
+
+          if (!existing.getEmail().equalsIgnoreCase(req.getEmail())) {
+            return clientRepository.existsByEmail(req.getEmail()).flatMap(exists -> {
+              if (exists)
+                return Mono.error(new IllegalArgumentException("Email already in use"));
+              existing.setEmail(req.getEmail());
+              return Mono.just(existing);
+            });
+          }
+          return Mono.just(existing);
+        }).flatMap(clientRepository::save);
+  }
+
+  public Mono<Client> patchClient(String id, PatchClientRequest req) {
+    return clientRepository.findById(id)
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found")))
+        .flatMap(existing -> applyPatch(existing, req)).flatMap(clientRepository::save);
+  }
+
+  public Mono<Void> delete(String id) {
+    return hasActiveAccounts(id).flatMap(hasAccounts -> {
+      if (hasAccounts)
+        return Mono.error(new ValidationException("Cannot delete client with active accounts"));
+      return clientRepository.deleteById(id);
+    });
+  }
+
+  private Mono<Boolean> hasActiveAccounts(String clientId) {
+    return webClient.get().uri("/cuentas?clienteId=" + clientId).retrieve()
+        .bodyToFlux(AccountResponse.class).collectList().map(list -> !list.isEmpty())
+        .onErrorResume(e -> Mono.error(new IllegalStateException("Accounts service unavailable")));
+  }
+
+  private Mono<Client> applyPatch(Client existing, PatchClientRequest req) {
+    if (req.getFirstName() != null) {
+      if (req.getFirstName().isBlank()) {
+        return Mono.error(new IllegalArgumentException("First name cannot be blank"));
+      }
+      existing.setFirstName(req.getFirstName());
     }
 
-    @Transactional
-    public Client register(CreateClientRequest createClientRequest) {
-        Client client = Client.builder()
-                .firstName(createClientRequest.getFirstName())
-                .lastName(createClientRequest.getLastName())
-                .email(createClientRequest.getEmail())
-                .dni(createClientRequest.getDni())
-                .build();
-
-        if (isBlank(client.getFirstName()) || isBlank(client.getLastName()) ||
-                isBlank(client.getDni()) || isBlank(client.getEmail())) {
-            throw new ValidationException("All fields are required");
-        }
-
-        if (clientRepository.existsByDni(client.getDni())) {
-            throw new IllegalArgumentException("DNI is already in use");
-        }
-
-        if (clientRepository.existsByEmail(client.getEmail())) {
-            throw new IllegalArgumentException("Email is already in use");
-        }
-
-        return clientRepository.save(client);
+    if (req.getLastName() != null) {
+      if (req.getLastName().isBlank()) {
+        return Mono.error(new IllegalArgumentException("Last name cannot be blank"));
+      }
+      existing.setLastName(req.getLastName());
     }
 
-    @Transactional(readOnly = true)
-    public List<Client> listAll() {
-        return clientRepository.findAll();
+    if (req.getDni() != null) {
+      if (req.getDni().isBlank()) {
+        return Mono.error(new IllegalArgumentException("DNI cannot be blank"));
+      }
+      existing.setDni(req.getDni());
     }
 
-    @Transactional
-    public Client updateClient(String id, UpdateClientRequest req) {
-        Client client = clientRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
-
-        if (!req.getEmail().equalsIgnoreCase(client.getEmail()) &&
-                clientRepository.existsByEmail(req.getEmail())) {
-            throw new IllegalArgumentException("Email is already in use");
-        }
-
-        client.setFirstName(req.getFirstName());
-        client.setLastName(req.getLastName());
-        client.setEmail(req.getEmail());
-
-        return clientRepository.save(client);
+    if (req.getEmail() != null) {
+      if (req.getEmail().isBlank()) {
+        return Mono.error(new IllegalArgumentException("Email cannot be blank"));
+      }
+      if (!req.getEmail().equalsIgnoreCase(existing.getEmail())) {
+        return clientRepository.existsByEmail(req.getEmail()).flatMap(exists -> {
+          if (exists) {
+            return Mono.error(new IllegalArgumentException("Email is already in use"));
+          }
+          existing.setEmail(req.getEmail());
+          return Mono.just(existing);
+        });
+      }
     }
-
-    @Transactional
-    public Client patchClient(String id, PatchClientRequest req) {
-        Client client = clientRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
-
-        if (req.getFirstName() != null) client.setFirstName(req.getFirstName());
-        if (req.getLastName() != null) client.setLastName(req.getLastName());
-        if (req.getDni() != null) client.setDni(req.getDni());
-
-        if (req.getEmail() != null && !req.getEmail().equalsIgnoreCase(client.getEmail())) {
-            if (clientRepository.existsByEmail(req.getEmail())) {
-                throw new IllegalArgumentException("Email is already in use");
-            }
-            client.setEmail(req.getEmail());
-        }
-
-        return clientRepository.save(client);
-    }
-
-    @Transactional
-    public void deleteClient(String id) {
-        if (!clientRepository.existsById(id)) {
-            throw new IllegalArgumentException("Client not found");
-        }
-
-        clientRepository.deleteById(id);
-    }
-
+    return Mono.just(existing);
+  }
 }

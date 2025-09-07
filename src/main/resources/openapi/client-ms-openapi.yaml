@@ -82,19 +82,36 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateClientRequest'
+            example:
+              firstName: "Mary"
+              lastName: "Shirley"
+              dni: "75804500"
+              email: "updated@example.es"
       responses:
         '200':
-          description: Client successfully updated
+          description: Client successfully patched
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientResponse'
         '400':
-          description: Invalid data
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     patch:
       tags: [Client]
@@ -111,6 +128,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchClientRequest'
+            example:
+              firstName: "Camille"
+              email: "patched@example.es"
       responses:
         '200':
           description: Client successfully patched
@@ -118,8 +138,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     delete:
       tags: [Client]
@@ -133,8 +169,18 @@ paths:
       responses:
         '204':
           description: Client deleted
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -197,3 +243,16 @@ components:
         email:
           type: string
           format: email
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "DNI cannot be blank"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-09-06T16:45:00"

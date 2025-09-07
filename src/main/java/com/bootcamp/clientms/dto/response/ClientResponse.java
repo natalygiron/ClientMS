@@ -16,12 +16,7 @@ public class ClientResponse {
   private String email;
 
   public static ClientResponse from(Client client) {
-    return new ClientResponse(
-            client.getId(),
-            client.getFirstName(),
-            client.getLastName(),
-            client.getDni(),
-            client.getEmail()
-    );
+    return new ClientResponse(client.getId(), client.getFirstName(), client.getLastName(),
+        client.getDni(), client.getEmail());
   }
 }
