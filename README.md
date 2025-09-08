@@ -69,6 +69,19 @@ Antes de hacer commit o crear un pull request:
 ```
 ---
 
+## 🏗️ Arquitectura de sistema
+
+### Diagrama de Componentes
+![Diagrama de Componentes](src/diagrams/Diagrama%20de%20componentes.png)
+
+### Diagrama de Secuencia
+![Diagrama de Secuencia](src/diagrams/Diagra%20de%20secuencia.png)
+
+### Diagrama de Flujo
+![Diagrama de Flujo](src/diagrams/Diagrama%20de%20flujo.png)
+
+---
+
 ## 📦 Estructura del proyecto
 ```código
 client-ms/
@@ -112,6 +125,3 @@ client-ms/
 }
 ```
 > Esta estructura facilita el debugging y permite que los clientes automaticen el manejo de errores.
-
-
-
