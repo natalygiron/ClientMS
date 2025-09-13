@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ClientService {
 
+  private static final String CLIENT_NOT_FOUND_MSG = "Client not found";
+
   private final ClientRepository clientRepository;
   private final WebClient webClient;
 
@@ -28,9 +30,9 @@ public class ClientService {
 
     return Mono.zip(clientRepository.existsByDni(client.getDni()),
         clientRepository.existsByEmail(client.getEmail())).flatMap(tuple -> {
-          if (tuple.getT1())
+          if (Boolean.TRUE.equals(tuple.getT1()))
             return Mono.error(new IllegalArgumentException("DNI already in use"));
-          if (tuple.getT2())
+          if (Boolean.TRUE.equals(tuple.getT2()))
             return Mono.error(new IllegalArgumentException("Email already in use"));
           return clientRepository.save(client);
         });
@@ -38,7 +40,7 @@ public class ClientService {
 
   public Mono<Client> getById(String id) {
     return clientRepository.findById(id)
-        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found")));
+        .switchIfEmpty(Mono.error(new IllegalArgumentException(CLIENT_NOT_FOUND_MSG)));
   }
 
   public Flux<Client> listAll() {
@@ -47,7 +49,7 @@ public class ClientService {
 
   public Mono<Client> update(String id, UpdateClientRequest req) {
     return clientRepository.findById(id)
-        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found")))
+        .switchIfEmpty(Mono.error(new IllegalArgumentException(CLIENT_NOT_FOUND_MSG)))
         .flatMap(existing -> {
           existing.setFirstName(req.getFirstName());
           existing.setLastName(req.getLastName());
@@ -55,7 +57,7 @@ public class ClientService {
 
           if (!existing.getEmail().equalsIgnoreCase(req.getEmail())) {
             return clientRepository.existsByEmail(req.getEmail()).flatMap(exists -> {
-              if (exists)
+              if (Boolean.TRUE.equals(exists))
                 return Mono.error(new IllegalArgumentException("Email already in use"));
               existing.setEmail(req.getEmail());
               return Mono.just(existing);
@@ -67,13 +69,13 @@ public class ClientService {
 
   public Mono<Client> patchClient(String id, PatchClientRequest req) {
     return clientRepository.findById(id)
-        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found")))
+        .switchIfEmpty(Mono.error(new IllegalArgumentException(CLIENT_NOT_FOUND_MSG)))
         .flatMap(existing -> applyPatch(existing, req)).flatMap(clientRepository::save);
   }
 
   public Mono<Void> delete(String id) {
     return hasActiveAccounts(id).flatMap(hasAccounts -> {
-      if (hasAccounts)
+      if (Boolean.TRUE.equals(hasAccounts))
         return Mono.error(new ValidationException("Cannot delete client with active accounts"));
       return clientRepository.deleteById(id);
     });
@@ -86,6 +88,11 @@ public class ClientService {
   }
 
   private Mono<Client> applyPatch(Client existing, PatchClientRequest req) {
+    return validateAndUpdateBasicFields(existing, req)
+        .flatMap(client -> validateAndUpdateEmail(client, req));
+  }
+
+  private Mono<Client> validateAndUpdateBasicFields(Client existing, PatchClientRequest req) {
     if (req.getFirstName() != null) {
       if (req.getFirstName().isBlank()) {
         return Mono.error(new IllegalArgumentException("First name cannot be blank"));
@@ -107,20 +114,28 @@ public class ClientService {
       existing.setDni(req.getDni());
     }
 
-    if (req.getEmail() != null) {
-      if (req.getEmail().isBlank()) {
-        return Mono.error(new IllegalArgumentException("Email cannot be blank"));
-      }
-      if (!req.getEmail().equalsIgnoreCase(existing.getEmail())) {
-        return clientRepository.existsByEmail(req.getEmail()).flatMap(exists -> {
-          if (exists) {
-            return Mono.error(new IllegalArgumentException("Email is already in use"));
-          }
-          existing.setEmail(req.getEmail());
-          return Mono.just(existing);
-        });
-      }
-    }
     return Mono.just(existing);
+  }
+
+  private Mono<Client> validateAndUpdateEmail(Client existing, PatchClientRequest req) {
+    if (req.getEmail() == null) {
+      return Mono.just(existing);
+    }
+
+    if (req.getEmail().isBlank()) {
+      return Mono.error(new IllegalArgumentException("Email cannot be blank"));
+    }
+
+    if (req.getEmail().equalsIgnoreCase(existing.getEmail())) {
+      return Mono.just(existing);
+    }
+
+    return clientRepository.existsByEmail(req.getEmail()).flatMap(exists -> {
+      if (Boolean.TRUE.equals(exists)) {
+        return Mono.error(new IllegalArgumentException("Email is already in use"));
+      }
+      existing.setEmail(req.getEmail());
+      return Mono.just(existing);
+    });
   }
 }

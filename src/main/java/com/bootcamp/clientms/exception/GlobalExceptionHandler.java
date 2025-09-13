@@ -2,16 +2,18 @@ package com.bootcamp.clientms.exception;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
-import com.bootcamp.clientms.filter.RequestPathFilter;
+
 import com.bootcamp.clientms.dto.response.ErrorResponse;
+import com.bootcamp.clientms.filter.RequestPathFilter;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
@@ -23,7 +25,7 @@ public class GlobalExceptionHandler {
     String path = exchange.getAttribute(RequestPathFilter.PATH_ATTRIBUTE);
 
     List<String> details = ex.getFieldErrors().stream()
-        .map(err -> err.getField() + ": " + err.getDefaultMessage()).collect(Collectors.toList());
+        .map(err -> err.getField() + ": " + err.getDefaultMessage()).toList();
 
     ErrorResponse error = new ErrorResponse(400, "Validation failed",
         LocalDateTime.now().toString(), path, ex.getClass().getSimpleName(), details);
